@@ -18,9 +18,8 @@ def line_dist_sq(point, line):
 
 
 def calc_distance_from_start(point):
-    min_dist = float("inf")
-    res = None
-    for i in range(len(lines)):
+    res, min_dist = line_dist_sq(point, lines[0])
+    for i in range(1, len(lines)):
         t, dist = line_dist_sq(point, lines[i])
         if dist < min_dist:
             min_dist = dist
@@ -28,7 +27,7 @@ def calc_distance_from_start(point):
     return res
 
 
-def get_straight_coordinates(point, rotation):
+def get_distances(point, rotation):
     theta = rotation / 180 * pi
     vertical_line = (cos(theta + pi / 2), -sin(theta + pi / 2), point[0], point[1])
     horizontal_line = (cos(theta), -sin(theta), point[0], point[1])
@@ -65,48 +64,16 @@ def get_straight_coordinates(point, rotation):
             min_flt = min(min_flt, t4)
         if t4 <= 0 and 0 <= f4 <= 1:
             min_brt = max(min_brt, t4)
-    # forward = (
-    #     vertical_line[2] + vertical_line[0] * min_ft,
-    #     vertical_line[3] + vertical_line[1] * min_ft,
-    # )
-    # backward = (
-    #     vertical_line[2] + vertical_line[0] * min_bt,
-    #     vertical_line[3] + vertical_line[1] * min_bt,
-    # )
-    # left = (
-    #     horizontal_line[2] + horizontal_line[0] * min_lt,
-    #     horizontal_line[3] + horizontal_line[1] * min_lt,
-    # )
-    # right = (
-    #     horizontal_line[2] + horizontal_line[0] * min_rt,
-    #     horizontal_line[3] + horizontal_line[1] * min_rt,
-    # )
-    # forward_right = (
-    #     forward_diagonal[2] + forward_diagonal[0] * min_frt,
-    #     forward_diagonal[3] + forward_diagonal[1] * min_frt,
-    # )
-    # backward_left = (
-    #     forward_diagonal[2] + forward_diagonal[0] * min_blt,
-    #     forward_diagonal[3] + forward_diagonal[1] * min_blt,
-    # )
-    # forward_left = (
-    #     backward_diagonal[2] + backward_diagonal[0] * min_flt,
-    #     backward_diagonal[3] + backward_diagonal[1] * min_flt,
-    # )
-    # backward_right = (
-    #     backward_diagonal[2] + backward_diagonal[0] * min_brt,
-    #     backward_diagonal[3] + backward_diagonal[1] * min_brt,
-    # )
 
     return (
         min_ft,
-        min_bt,
-        min_lt,
+        -min_bt,
+        -min_lt,
         min_rt,
         min_frt,
-        min_blt,
+        -min_blt,
         min_flt,
-        min_brt,
+        -min_brt,
     )
 
 
@@ -206,3 +173,4 @@ def read_file(filename):
 
 
 lines, border_lines = read_file("lines.txt")
+num_lines = len(lines)

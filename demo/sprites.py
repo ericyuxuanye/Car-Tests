@@ -1,27 +1,38 @@
 import pygame
 from math import sin, cos, pi, atan2, sqrt
-from utils import car_touching_line, get_straight_coordinates, relative_car_velocities
+from utils import (
+    calc_distance_from_start,
+    car_touching_line,
+    get_distances,
+    relative_car_velocities,
+    num_lines,
+)
 
 
 class Car(pygame.sprite.Sprite):
-    def __init__(self, init_x, init_y, acceleration, friction, rot_speed):
-        super(Car, self).__init__()
-        self.normal = pygame.image.load("car.png").convert_alpha()
+    def __init__(self, init_x, init_y, acceleration, friction, rot_speed, live=True):
+        if live:
+            super(Car, self).__init__()
+            self.normal = pygame.image.load("car.png").convert_alpha()
+        self.live = live
+        self.width = 24
+        self.height = 47
         self.init_x = init_x
         self.init_y = init_y
         self.rot_speed = rot_speed
         self.accel = acceleration
         self.friction = friction
+        self.prev_distance = 0
+        self.just_hit = False
         self.reset()
 
     def reset(self):
         self.x = self.init_x
         self.y = self.init_y
-        self.velocity = [0., 0.]
-        self.surf = self.normal
-        self.rect = self.surf.get_rect(center=(self.x, self.y))
-        self.width = self.rect.width
-        self.height = self.rect.height
+        self.velocity = [0.0, 0.0]
+        if self.live:
+            self.surf = self.normal
+            self.rect = self.surf.get_rect(center=(self.x, self.y))
         self.rotation = 0
 
     def update(self, left, right, forward, backward):
@@ -48,10 +59,38 @@ class Car(pygame.sprite.Sprite):
         self.x += self.velocity[0]
         self.y += self.velocity[1]
         if car_touching_line(self.x, self.y, self.width, self.height, self.rotation):
+            self.just_hit = True
             self.reset()
             return
-        self.surf = pygame.transform.rotate(self.normal, self.rotation)
-        self.rect = self.surf.get_rect(center=(round(self.x), round(self.y)))
+        if self.live:
+            self.surf = pygame.transform.rotate(self.normal, self.rotation)
+            self.rect = self.surf.get_rect(center=(round(self.x), round(self.y)))
 
-    def laser_coordinates(self):
-        return get_straight_coordinates((self.x, self.y), self.rotation)
+    def get_state(self):
+        state = []
+        distances = get_distances((self.x, self.y), self.rotation)
+        state.extend(distances)
+        velocities = relative_car_velocities(self.velocity, self.rotation)
+        state.extend(velocities)
+        return state
+
+    def get_reward(self):
+        curr_distance = calc_distance_from_start(
+            (self.x, self.y)
+        )
+        reward = curr_distance - self.prev_distance
+        if reward > num_lines / 2:
+            reward = curr_distance - num_lines - self.prev_distance
+        elif reward < -num_lines / 2:
+            reward = (num_lines - self.prev_distance) + curr_distance
+        self.prev_distance = curr_distance
+        if reward < 0:
+            reward = 0
+        reward *= 10
+        # So that agent does not stay in place
+        # reward -= 0.1
+        if self.just_hit:
+             # reward -= 10
+             self.just_hit = False
+        return reward
+            

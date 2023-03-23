@@ -1,5 +1,8 @@
 import pygame
 from utils import fill_in_line, border_lines, lines
+from model import get_action, update_model, save_model
+import signal
+import traceback
 
 from pygame.locals import (
     K_LEFT,
@@ -8,32 +11,68 @@ from pygame.locals import (
     K_DOWN,
 )
 
+LIVE = True
+
 from sprites import Car
 
-pygame.init()
+action_to_keys = [
+    (0, 0, 0, 0),
+    (1, 0, 0, 0),
+    (0, 1, 0, 0),
+    (0, 0, 1, 0),
+    (0, 0, 0, 1),
+    (1, 0, 0, 1),
+    (1, 0, 1, 0),
+    (0, 1, 1, 0),
+    (0, 1, 0, 1),
+]
 
-screen = pygame.display.set_mode((1024, 768))
-background = fill_in_line(border_lines)
+def handler(signum, frame):
+    traceback.print_stack(frame)
+    save_model()
+    exit()
+
+signal.signal(signal.SIGINT, handler)
+
+if LIVE:
+    pygame.init()
+
+    screen = pygame.display.set_mode((1024, 768))
+    background = fill_in_line(border_lines)
 
 initial_point_x = lines[0][2]
 initial_point_y = lines[0][3]
-car = Car(initial_point_x, initial_point_y, 1.5, 1, 7)
+car = Car(initial_point_x, initial_point_y, 1.5, 1, 7, LIVE)
 
 done = False
 clock = pygame.time.Clock()
+episode = 0
+total_rewards = 0
 
 while not done:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            done = True
+    if LIVE:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                done = True
 
-    pressed = pygame.key.get_pressed()
-    car.update(pressed[K_LEFT], pressed[K_RIGHT], pressed[K_UP], pressed[K_DOWN])
-    screen.blit(background, (0, 0))
-    screen.blit(car.surf, car.rect)
-    # laser_coordinates = car.laser_coordinates()
-    # print(forward_coordinate)
-    # for point in laser_coordinates:
-    #     pygame.draw.circle(screen, "black", point, 5)
-    pygame.display.flip()
-    clock.tick(60)
+    action = action_to_keys[get_action(car.get_state())]
+    # pressed = pygame.key.get_pressed()
+    car.update(*action)
+    if car.just_hit:
+        print("episode:", episode, end="\t")
+        print("rewards:", total_rewards)
+        episode += 1
+        total_rewards = 0
+
+    if LIVE:
+        screen.blit(background, (0, 0))
+        screen.blit(car.surf, car.rect)
+        pygame.display.flip()
+        clock.tick(60)
+
+    # update model
+    reward = car.get_reward()
+    total_rewards += reward
+    update_model(car.get_state(), reward, car.just_hit)
+
+save_model()
