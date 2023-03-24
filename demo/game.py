@@ -11,7 +11,7 @@ from pygame.locals import (
     K_DOWN,
 )
 
-LIVE = True
+LIVE = False
 
 from sprites import Car
 
@@ -55,10 +55,12 @@ while not done:
             if event.type == pygame.QUIT:
                 done = True
 
-    action = action_to_keys[get_action(car.get_state())]
     # pressed = pygame.key.get_pressed()
+    # car.update(pressed[K_LEFT], pressed[K_RIGHT], pressed[K_UP], pressed[K_DOWN])
+    action = action_to_keys[get_action(car.get_state())]
     car.update(*action)
-    if car.just_hit:
+    just_hit = car.just_hit
+    if just_hit:
         print("episode:", episode, end="\t")
         print("rewards:", total_rewards)
         episode += 1
@@ -73,6 +75,6 @@ while not done:
     # update model
     reward = car.get_reward()
     total_rewards += reward
-    update_model(car.get_state(), reward, car.just_hit)
+    update_model(car.get_state(), reward, just_hit)
 
 save_model()

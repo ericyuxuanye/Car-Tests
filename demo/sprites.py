@@ -22,7 +22,6 @@ class Car(pygame.sprite.Sprite):
         self.rot_speed = rot_speed
         self.accel = acceleration
         self.friction = friction
-        self.prev_distance = 0
         self.just_hit = False
         self.reset()
 
@@ -30,6 +29,7 @@ class Car(pygame.sprite.Sprite):
         self.x = self.init_x
         self.y = self.init_y
         self.velocity = [0.0, 0.0]
+        self.prev_distance = 0
         if self.live:
             self.surf = self.normal
             self.rect = self.surf.get_rect(center=(self.x, self.y))
@@ -84,13 +84,12 @@ class Car(pygame.sprite.Sprite):
         elif reward < -num_lines / 2:
             reward = (num_lines - self.prev_distance) + curr_distance
         self.prev_distance = curr_distance
-        if reward < 0:
-            reward = 0
-        reward *= 10
+        reward *= 50
+        if reward <= 0:
+            # So that the agent does not stay in place
+            reward = -0.1
         # So that agent does not stay in place
         # reward -= 0.1
         if self.just_hit:
-             # reward -= 10
              self.just_hit = False
         return reward
-            

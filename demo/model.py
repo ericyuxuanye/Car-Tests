@@ -37,17 +37,17 @@ class DQN(nn.Module):
         self.layer3 = nn.Linear(64, n_actions)
 
     def forward(self, x):
-        x = F.relu(self.layer1(x))
-        x = F.relu(self.layer2(x))
+        x = F.leaky_relu(self.layer1(x))
+        x = F.leaky_relu(self.layer2(x))
         return self.layer3(x)
 
 
 BATCH_SIZE = 128
-GAMMA = 0.80
-EPS_START = 0.5
+GAMMA = 0.98
+EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 1000000
-TAU = 0.005
+EPS_DECAY = 100000
+TAU = 0.01
 LR = 1e-4
 
 n_actions = 9
@@ -57,12 +57,10 @@ policy_net = DQN(n_observations, n_actions).to(device)
 if os.path.exists("policy_net.pt"):
     policy_net.load_state_dict(torch.load("policy_net.pt"))
 target_net = DQN(n_observations, n_actions).to(device)
-if os.path.exists("target_net.pt"):
-    target_net.load_state_dict(torch.load("target_net.pt"))
-else:
-    target_net.load_state_dict(policy_net.state_dict())
+target_net.load_state_dict(policy_net.state_dict())
 
 optimizer = optim.Adam(policy_net.parameters(), lr=LR, amsgrad=True)
+
 memory = ReplayMemory(10000)
 
 steps_done = 0
@@ -108,7 +106,8 @@ def optimize_model():
     state_action_values = policy_net(state_batch).gather(1, action_batch)
 
     # Compute V(s_{t+1})
-    next_state_values = torch.zeros(BATCH_SIZE, device=device)
+    # with default punishment
+    next_state_values = torch.full((BATCH_SIZE,), -50, device=device, dtype=torch.float)
     with torch.no_grad():
         next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0]
 
@@ -163,6 +162,5 @@ def update_model(new_state, reward, just_hit):
 
 def save_model():
     torch.save(policy_net.state_dict(), f="policy_net.pt")
-    torch.save(target_net.state_dict(), f="target_net.pt")
     with open("steps.txt", "wt") as f:
         print(steps_done, file=f)
