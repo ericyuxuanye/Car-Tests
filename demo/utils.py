@@ -38,8 +38,8 @@ def get_distances(point, rotation):
         point[0],
         point[1],
     )
-    min_ft = min_rt = min_frt = min_flt = float("inf")
-    min_bt = min_lt = min_brt = min_blt = float("-inf")
+    min_ft = min_rt = min_frt = min_flt = 1000
+    min_bt = min_lt = min_brt = min_blt = -1000
     for line in border_lines:
         t1, f1 = line_intersect(vertical_line, line)
         if t1 >= 0 and 0 <= f1 <= 1:
