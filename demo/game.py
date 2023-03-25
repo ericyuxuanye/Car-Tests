@@ -75,6 +75,7 @@ while not done:
     # update model
     reward = car.get_reward()
     total_rewards += reward
-    update_model(car.get_state(), reward, just_hit)
+    if not LIVE:
+        update_model(car.get_state(), reward, just_hit)
 
 save_model()

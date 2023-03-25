@@ -70,12 +70,10 @@ if os.path.exists("steps.txt"):
 
 
 def select_action(state):
-    global steps_done
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(
         -1.0 * steps_done / EPS_DECAY
     )
-    steps_done += 1
     if sample > eps_threshold:
         with torch.no_grad():
             # pick best action
@@ -141,6 +139,8 @@ def get_action(state):
 
 
 def update_model(new_state, reward, just_hit):
+    global steps_done
+    steps_done += 1
     if just_hit:
         new_state = None
     else:
