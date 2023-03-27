@@ -1,4 +1,5 @@
 import pygame
+import random
 from math import sin, cos, pi, atan2, sqrt
 from utils import (
     calc_distance_from_start,
@@ -6,19 +7,19 @@ from utils import (
     get_distances,
     relative_car_velocities,
     num_lines,
+    line_angle,
+    lines,
 )
 
 
 class Car(pygame.sprite.Sprite):
-    def __init__(self, init_x, init_y, acceleration, friction, rot_speed, live=True):
+    def __init__(self, acceleration, friction, rot_speed, live=True):
         if live:
             super(Car, self).__init__()
             self.normal = pygame.image.load("car.png").convert_alpha()
         self.live = live
         self.width = 24
         self.height = 47
-        self.init_x = init_x
-        self.init_y = init_y
         self.rot_speed = rot_speed
         self.accel = acceleration
         self.friction = friction
@@ -26,14 +27,16 @@ class Car(pygame.sprite.Sprite):
         self.reset()
 
     def reset(self):
-        self.x = self.init_x
-        self.y = self.init_y
+        idx = random.randint(0, len(lines)-1)
+        line = lines[idx]
+        self.x = line[2]
+        self.y = line[3]
         self.velocity = [0.0, 0.0]
-        self.prev_distance = 0
+        self.prev_distance = idx
+        self.rotation = line_angle(line)
         if self.live:
-            self.surf = self.normal
+            self.surf = pygame.transform.rotate(self.normal, self.rotation)
             self.rect = self.surf.get_rect(center=(self.x, self.y))
-        self.rotation = 0
 
     def update(self, left, right, forward, backward):
         if left:

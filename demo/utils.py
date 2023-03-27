@@ -3,6 +3,13 @@ import pygame
 from math import atan2, pi, sin, cos, sqrt
 
 
+def line_angle(line):
+    angle_radians = -atan2(line[1], line[0])
+    # car's front is 90 degrees away
+    angle_radians -= pi/2
+    # convert radians to degrees
+    return angle_radians * 180 / pi
+
 def line_dist_sq(point, line):
     vec_const = (line[2] - point[0], line[3] - point[1])
     t_comp = line[0] * line[0] + line[1] * line[1]
@@ -89,7 +96,10 @@ def relative_car_velocities(velocity, rotation):
 def line_intersect(line1, line2):
     a, c, b, d = line1
     f, h, g, j = line2
-    t = -(d * f - b * h + g * h - f * j) / (c * f - a * h)
+    denom = c*f-a*h
+    if denom == 0 or h == 0:
+        return float('nan'), float('nan')
+    t = -(d * f - b * h + g * h - f * j) / denom
     s = (c * t + d - j) / h
     return t, s
 

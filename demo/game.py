@@ -42,7 +42,7 @@ if LIVE:
 
 initial_point_x = lines[0][2]
 initial_point_y = lines[0][3]
-car = Car(initial_point_x, initial_point_y, 1.5, 1, 7, LIVE)
+car = Car(1.5, 1, 7, LIVE)
 
 done = False
 clock = pygame.time.Clock()
