@@ -37,7 +37,7 @@ signal.signal(signal.SIGINT, handler)
 if LIVE:
     pygame.init()
 
-    screen = pygame.display.set_mode((1024, 768))
+    screen = pygame.display.set_mode((1024, 768), flags=pygame.SCALED, vsync=1)
     background = fill_in_line(border_lines)
 
 initial_point_x = lines[0][2]

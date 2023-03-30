@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 pygame.init()
 
-screen = pygame.display.set_mode((1024, 768))
+screen = pygame.display.set_mode((1024, 768), flags=pygame.SCALED, vsync=1)
 points: List[Tuple[int, int]] = []
 # parametric line (x slope, y slope, init_x, init_y)
 lines: List[Tuple[int, int, int, int]] = []

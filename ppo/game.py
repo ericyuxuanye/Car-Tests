@@ -25,7 +25,7 @@ action_to_keys = [
 
 pygame.init()
 
-screen = pygame.display.set_mode((1024, 768))
+screen = pygame.display.set_mode((1024, 768), flags=pygame.SCALED, vsync=1)
 background = pygame.surfarray.make_surface(get_color_array(border_lines))
 
 initial_point_x = lines[0][2]

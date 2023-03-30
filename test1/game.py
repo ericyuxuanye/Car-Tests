@@ -11,7 +11,7 @@ from sprites import Car
 
 pygame.init()
 
-screen = pygame.display.set_mode((1024, 768))
+screen = pygame.display.set_mode((1024, 768), flags=pygame.SCALED, vsync=1)
 
 car = Car(512, 384, 1, 0.5, 7)
 
