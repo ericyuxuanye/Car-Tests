@@ -1,5 +1,6 @@
-import random
+import pygame
 import numpy as np
+import random
 from math import sin, cos, pi, atan2, sqrt
 from utils import (
     calc_distance_from_start,
@@ -10,47 +11,32 @@ from utils import (
     line_angle,
     lines,
 )
-from stable_baselines3 import PPO
-from stable_baselines3.common.env_checker import check_env
-from gym import Env, spaces
-
-action_to_keys = [
-    (0, 0, 0, 0),
-    (1, 0, 0, 0),
-    (0, 1, 0, 0),
-    (0, 0, 1, 0),
-    (0, 0, 0, 1),
-    (1, 0, 0, 1),
-    (1, 0, 1, 0),
-    (0, 1, 1, 0),
-    (0, 1, 0, 1),
-]
 
 
-class Car(Env):
+class Car(pygame.sprite.Sprite):
     def __init__(self, acceleration, friction, rot_speed):
-        super().__init__()
+        super(Car, self).__init__()
+        self.normal = pygame.image.load("car.png").convert_alpha()
         self.width = 24
         self.height = 47
         self.rot_speed = rot_speed
         self.accel = acceleration
         self.friction = friction
         self.just_hit = False
-        self.observation_space = spaces.Box(low=-1000, high=1000, shape=(10,), dtype=np.float32)
-        self.action_space = spaces.Discrete(8)
+        self.reset()
 
     def reset(self):
-        idx = random.randint(0, len(lines)-1)
-        line = lines[idx]
+        #idx = random.randint(0, len(lines)-1)
+        line = lines[0]
         self.x = line[2]
         self.y = line[3]
         self.velocity = [0.0, 0.0]
-        self.prev_distance = idx
+        self.prev_distance = 0
         self.rotation = line_angle(line)
-        return self.get_state()
+        self.surf = pygame.transform.rotate(self.normal, self.rotation)
+        self.rect = self.surf.get_rect(center=(self.x, self.y))
 
-    def step(self, action):
-        left, right, forward, backward = action_to_keys[action]
+    def update(self, left, right, forward, backward):
         if left:
             self.rotation += self.rot_speed
         if right:
@@ -73,11 +59,12 @@ class Car(Env):
 
         self.x += self.velocity[0]
         self.y += self.velocity[1]
-        just_hit = False
         if car_touching_line(self.x, self.y, self.width, self.height, self.rotation):
-            just_hit = True
-
-        return self.get_state(), self.get_reward(just_hit), just_hit, {}
+            self.just_hit = True
+            self.reset()
+            return
+        self.surf = pygame.transform.rotate(self.normal, self.rotation)
+        self.rect = self.surf.get_rect(center=(round(self.x), round(self.y)))
 
     def get_state(self):
         state = np.empty((10,), dtype=np.float32)
@@ -87,9 +74,7 @@ class Car(Env):
         state[8:10] = velocities
         return state
 
-    def get_reward(self, just_hit):
-        if just_hit:
-            return -10
+    def get_reward(self):
         curr_distance = calc_distance_from_start(
             (self.x, self.y)
         )
@@ -105,13 +90,6 @@ class Car(Env):
         #     reward = -0.1
         # So that agent does not stay in place
         # reward -= 0.1
+        if self.just_hit:
+             self.just_hit = False
         return reward
-
-
-env = Car(1.5, 1, 7)
-# check_env(env)
-
-# model = PPO("MlpPolicy", env, verbose=2)
-model = PPO.load("ppo_racer", env=env)
-model.learn(total_timesteps=200_000)
-model.save("ppo_racer")

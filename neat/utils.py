@@ -164,7 +164,7 @@ def get_color_array(border_lines):
     for line in border_lines:
         intersect_count[did_intersect_np(point_line, line)] += 1
     color_array = np.full((1024, 768, 3), 255)
-    color_array[intersect_count % 2 == 1, :] = 59
+    color_array[intersect_count % 2 == 1, :] = 128
     return color_array
     # return pygame.surfarray.make_surface(color_array)
 

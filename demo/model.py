@@ -43,12 +43,13 @@ class DQN(nn.Module):
 
 
 BATCH_SIZE = 128
-GAMMA = 0.98
+GAMMA = 0.99
 EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 100000
+EPS_DECAY = 400000
 TAU = 0.01
 LR = 1e-4
+SKIP = 4
 
 n_actions = 9
 n_observations = 10
@@ -105,7 +106,7 @@ def optimize_model():
 
     # Compute V(s_{t+1})
     # with default punishment
-    next_state_values = torch.full((BATCH_SIZE,), -50, device=device, dtype=torch.float)
+    next_state_values = torch.full((BATCH_SIZE,), -10, device=device, dtype=torch.float)
     with torch.no_grad():
         next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0]
 
@@ -147,17 +148,18 @@ def update_model(new_state, reward, just_hit):
         new_state = torch.FloatTensor(new_state).reshape((1, 10)).to(device)
     reward = torch.tensor([reward], device=device)
     memory.push(prev_state, prev_action, new_state, reward)
-    optimize_model()
+    if steps_done % SKIP == 0:
+        optimize_model()
 
-    # soft update of the target network's weights
-    # θ′ ← τ θ + (1 −τ )θ′
-    target_net_state_dict = target_net.state_dict()
-    policy_net_state_dict = policy_net.state_dict()
-    for key in policy_net_state_dict:
-        target_net_state_dict[key] = policy_net_state_dict[
-            key
-        ] * TAU + target_net_state_dict[key] * (1 - TAU)
-    target_net.load_state_dict(target_net_state_dict)
+        # soft update of the target network's weights
+        # θ′ ← τ θ + (1 −τ )θ′
+        target_net_state_dict = target_net.state_dict()
+        policy_net_state_dict = policy_net.state_dict()
+        for key in policy_net_state_dict:
+            target_net_state_dict[key] = policy_net_state_dict[
+                key
+            ] * TAU + target_net_state_dict[key] * (1 - TAU)
+        target_net.load_state_dict(target_net_state_dict)
 
 
 def save_model():

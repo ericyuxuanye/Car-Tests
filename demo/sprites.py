@@ -88,9 +88,9 @@ class Car(pygame.sprite.Sprite):
             reward = (num_lines - self.prev_distance) + curr_distance
         self.prev_distance = curr_distance
         reward *= 50
-        if reward <= 0:
-            # So that the agent does not stay in place
-            reward = -0.1
+        # if reward <= 0:
+        #     # So that the agent does not stay in place
+        #     reward = -0.1
         # So that agent does not stay in place
         # reward -= 0.1
         if self.just_hit:
