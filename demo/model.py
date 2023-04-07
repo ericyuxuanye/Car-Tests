@@ -49,7 +49,6 @@ EPS_END = 0.05
 EPS_DECAY = 400000
 TAU = 0.01
 LR = 1e-4
-SKIP = 4
 
 n_actions = 9
 n_observations = 10
@@ -148,18 +147,17 @@ def update_model(new_state, reward, just_hit):
         new_state = torch.FloatTensor(new_state).reshape((1, 10)).to(device)
     reward = torch.tensor([reward], device=device)
     memory.push(prev_state, prev_action, new_state, reward)
-    if steps_done % SKIP == 0:
-        optimize_model()
+    optimize_model()
 
-        # soft update of the target network's weights
-        # θ′ ← τ θ + (1 −τ )θ′
-        target_net_state_dict = target_net.state_dict()
-        policy_net_state_dict = policy_net.state_dict()
-        for key in policy_net_state_dict:
-            target_net_state_dict[key] = policy_net_state_dict[
-                key
-            ] * TAU + target_net_state_dict[key] * (1 - TAU)
-        target_net.load_state_dict(target_net_state_dict)
+    # soft update of the target network's weights
+    # θ′ ← τ θ + (1 −τ )θ′
+    target_net_state_dict = target_net.state_dict()
+    policy_net_state_dict = policy_net.state_dict()
+    for key in policy_net_state_dict:
+        target_net_state_dict[key] = policy_net_state_dict[
+            key
+        ] * TAU + target_net_state_dict[key] * (1 - TAU)
+    target_net.load_state_dict(target_net_state_dict)
 
 
 def save_model():
