@@ -1,7 +1,9 @@
 import numpy as np
 from math import atan2, pi, sin, cos, sqrt
+from numba import jit
 
 
+@jit(nopython=True)
 def line_angle(line):
     angle_radians = -atan2(line[1], line[0])
     # car's front is 90 degrees away
@@ -9,6 +11,7 @@ def line_angle(line):
     # convert radians to degrees
     return angle_radians * 180 / pi
 
+@jit(nopython=True)
 def line_dist_sq(point, line):
     vec_const = (line[2] - point[0], line[3] - point[1])
     t_comp = line[0] * line[0] + line[1] * line[1]
@@ -23,7 +26,8 @@ def line_dist_sq(point, line):
     return t, (point[0] - x) ** 2 + (point[1] - y) ** 2
 
 
-def calc_distance_from_start(point):
+@jit(nopython=True)
+def calc_distance_from_start(point, lines):
     res, min_dist = line_dist_sq(point, lines[0])
     for i in range(1, len(lines)):
         t, dist = line_dist_sq(point, lines[i])
@@ -33,7 +37,8 @@ def calc_distance_from_start(point):
     return res
 
 
-def get_distances(point, rotation):
+@jit(nopython=True)
+def get_distances(point, rotation, border_lines):
     theta = rotation / 180 * pi
     vertical_line = (cos(theta + pi / 2), -sin(theta + pi / 2), point[0], point[1])
     horizontal_line = (cos(theta), -sin(theta), point[0], point[1])
@@ -83,6 +88,7 @@ def get_distances(point, rotation):
     )
 
 
+@jit(nopython=True)
 def relative_car_velocities(velocity, rotation):
     theta = atan2(-velocity[1], velocity[0])
     r = sqrt(velocity[0]**2 + velocity[1]**2)
@@ -92,22 +98,25 @@ def relative_car_velocities(velocity, rotation):
     return (vertical_velocity, horizontal_velocity)
 
 
+@jit(nopython=True)
 def line_intersect(line1, line2):
     a, c, b, d = line1
     f, h, g, j = line2
     denom = c*f-a*h
     if denom == 0 or h == 0:
-        return float('nan'), float('nan')
+        return np.nan, np.nan
     t = -(d * f - b * h + g * h - f * j) / denom
     s = (c * t + d - j) / h
     return t, s
 
 
+@jit(nopython=True)
 def create_line(p1, p2):
     return (p2[0] - p1[0], p2[1] - p1[1], p1[0], p1[1])
 
 
-def car_touching_line(center_x, center_y, width, height, rotation):
+@jit(nopython=True)
+def car_touching_line(center_x, center_y, width, height, rotation, lines, border_lines):
     theta = rotation / 180 * pi + pi / 2
     hw = width / 2
     hh = height / 2
@@ -163,8 +172,12 @@ def get_color_array(border_lines):
     point_line[X, Y, 1] = 0
     for line in border_lines:
         intersect_count[did_intersect_np(point_line, line)] += 1
-    color_array = np.full((1024, 768, 3), 255)
-    color_array[intersect_count % 2 == 1, :] = 59
+    color_array = np.zeros((1024, 768, 4), dtype=int)
+    mask = intersect_count % 2 == 1
+    color_array[mask, 0] = 46
+    color_array[mask, 1] = 44
+    color_array[mask, 2] = 42
+    color_array[mask, 3] = 255
     return color_array
     # return pygame.surfarray.make_surface(color_array)
 
@@ -172,15 +185,11 @@ def get_color_array(border_lines):
 def read_file(filename):
     with open(filename, "rt") as f:
         n = int(f.readline())
-        lines = []
-        for _ in range(n):
-            lines.append(tuple(map(int, f.readline().split())))
-        border_lines = []
-        for _ in range(n * 2):
-            border_lines.append(tuple(map(float, f.readline().split())))
+        lines = np.empty((n, 4))
+        for i in range(n):
+            lines[i] = tuple(map(int, f.readline().split()))
+        border_lines = np.empty((n*2, 4))
+        for i in range(n * 2):
+            border_lines[i] = tuple(map(float, f.readline().split()))
 
     return lines, border_lines
-
-
-lines, border_lines = read_file("lines.txt")
-num_lines = len(lines)

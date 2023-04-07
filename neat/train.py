@@ -7,10 +7,9 @@ from utils import (
     car_touching_line,
     get_distances,
     relative_car_velocities,
-    num_lines,
     line_angle,
-    lines,
 )
+from data import num_lines, border_lines, lines
 import neat
 import os
 action_to_keys = [
@@ -39,13 +38,13 @@ class Car():
         line = lines[0]
         self.x = line[2]
         self.y = line[3]
-        self.velocity = [0.0, 0.0]
+        self.velocity = np.array([0.0, 0.0])
         self.prev_distance = 0
         self.rotation = line_angle(line)
 
     def step(self, action):
         probs = softmax(action)
-        left, right, forward, backward = action_to_keys[np.random.choice(np.arange(8), p=probs)]
+        left, right, forward, backward = action_to_keys[np.random.choice(np.arange(9), p=probs)]
         if left:
             self.rotation += self.rot_speed
         if right:
@@ -69,24 +68,23 @@ class Car():
         self.x += self.velocity[0]
         self.y += self.velocity[1]
         just_hit = False
-        if car_touching_line(self.x, self.y, self.width, self.height, self.rotation):
+        if car_touching_line(self.x, self.y, self.width, self.height, self.rotation, lines, border_lines):
             just_hit = True
 
-        return self.get_state(), self.get_reward(just_hit), just_hit
+        return self.get_state(), self.get_reward(), just_hit
 
     def get_state(self):
         state = np.empty((10,), dtype=np.float32)
-        distances = get_distances((self.x, self.y), self.rotation)
+        distances = get_distances((self.x, self.y), self.rotation, border_lines)
         state[:8] = distances
         velocities = relative_car_velocities(self.velocity, self.rotation)
         state[8:10] = velocities
         return state
 
-    def get_reward(self, just_hit):
-        if just_hit:
-            return -10
+    def get_reward(self):
         curr_distance = calc_distance_from_start(
-            (self.x, self.y)
+            (self.x, self.y),
+            lines
         )
         reward = curr_distance - self.prev_distance
         if reward > num_lines / 2:
@@ -134,7 +132,7 @@ def run(config_file):
     p.add_reporter(neat.Checkpointer(5))
 
     # Run for up to 300 generations.
-    winner = p.run(evaluator.evaluate, 10)
+    winner = p.run(evaluator.evaluate, 100)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))

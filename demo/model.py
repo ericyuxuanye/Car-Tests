@@ -81,7 +81,7 @@ def select_action(state):
             return policy_net(state).max(1)[1].view(1, 1)
     else:
         # pick random action
-        return torch.tensor([[random.randint(0, 7)]], device=device, dtype=torch.long)
+        return torch.tensor([[random.randint(0, n_actions-1)]], device=device, dtype=torch.long)
 
 
 def optimize_model():

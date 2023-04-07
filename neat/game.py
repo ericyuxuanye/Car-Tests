@@ -1,7 +1,8 @@
 import pickle
 from neat.math_util import softmax
 import pygame
-from utils import get_color_array, border_lines, lines
+from utils import get_color_array
+from data import lines, border_lines
 import neat
 import numpy as np
 
@@ -55,7 +56,7 @@ while not done:
     # car.update(pressed[K_LEFT], pressed[K_RIGHT], pressed[K_UP], pressed[K_DOWN])
     action = net.activate(car.get_state())
     probs = softmax(action)
-    action = action_to_keys[np.random.choice(np.arange(8), p=probs)]
+    action = action_to_keys[np.random.choice(np.arange(9), p=probs)]
     car.update(*action)
     screen.blit(background, (0, 0))
     screen.blit(car.surf, car.rect)

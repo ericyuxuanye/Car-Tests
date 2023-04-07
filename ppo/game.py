@@ -1,5 +1,8 @@
 import pygame
-from utils import get_color_array, border_lines, lines
+import numpy
+import pygame.pixelcopy
+from utils import get_color_array
+from data import lines, border_lines
 from stable_baselines3 import PPO
 
 from pygame.locals import (
@@ -23,10 +26,35 @@ action_to_keys = [
     (0, 1, 0, 1),
 ]
 
+def make_surface_rgba(array):
+    """Returns a surface made from a [w, h, 4] numpy array with per-pixel alpha
+    """
+    shape = array.shape
+    if len(shape) != 3 and shape[2] != 4:
+        raise ValueError("Array not RGBA")
+
+    # Create a surface the same width and height as array and with
+    # per-pixel alpha.
+    surface = pygame.Surface(shape[0:2], pygame.SRCALPHA, 32)
+
+    # Copy the rgb part of array to the new surface.
+    pygame.pixelcopy.array_to_surface(surface, array[:,:,0:3])
+
+    # Copy the alpha part of array to the surface using a pixels-alpha
+    # view of the surface.
+    surface_alpha = numpy.array(surface.get_view('A'), copy=False)
+    surface_alpha[:,:] = array[:,:,3]
+
+    return surface
+
 pygame.init()
 
 screen = pygame.display.set_mode((1024, 768), flags=pygame.SCALED, vsync=1)
-background = pygame.surfarray.make_surface(get_color_array(border_lines))
+bg_image = pygame.image.load("background.jpg")
+background = pygame.Surface((1024, 768), pygame.SRCALPHA)
+background.blit(bg_image, (0, 0))
+track = make_surface_rgba(get_color_array(border_lines))
+background.blit(track, (0, 0))
 
 initial_point_x = lines[0][2]
 initial_point_y = lines[0][3]
