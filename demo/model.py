@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-device = "cpu"
+device = "mps"
 
 Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
 

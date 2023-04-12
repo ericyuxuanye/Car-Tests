@@ -11,7 +11,7 @@ from pygame.locals import (
     K_DOWN,
 )
 
-LIVE = True
+LIVE = False
 
 from sprites import Car
 
