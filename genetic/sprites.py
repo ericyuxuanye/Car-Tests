@@ -27,6 +27,7 @@ class Car(pygame.sprite.Sprite):
 
     def reset(self):
         idx = random.randint(0, len(lines)-1)
+        # idx = 13
         line = lines[idx]
         self.x = line[2]
         self.y = line[3]

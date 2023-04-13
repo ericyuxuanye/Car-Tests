@@ -2,7 +2,7 @@ import random
 from itertools import count
 import signal
 import sys
-from multiprocessing.pool import Pool
+from torch.multiprocessing import Pool, set_start_method
 import numpy as np
 from math import sin, cos, pi, atan2, sqrt
 from functools import partial
@@ -15,7 +15,6 @@ from utils import (
 )
 from data import lines, border_lines, num_lines
 from model import (
-    POP_SIZE,
     create_net,
     crossover,
     mutate,
@@ -38,6 +37,11 @@ action_to_keys = (
     (0, 1, 1, 0),
     (0, 1, 0, 1),
 )
+
+try:
+    set_start_method("spawn")
+except RuntimeError:
+    pass
 
 
 class Car:
@@ -166,19 +170,20 @@ if __name__ == "__main__":
         for i in count():
             # we start at a different location each generation
             starting_location = random.randint(0, num_lines - 1)
-            # starting_location = 0
+            # starting_location = 13
             fitness_eval = partial(fitness, starting_index=starting_location)
             fitnesses = np.array(pool.map(fitness_eval, population))
+            n_fittest = [population[x] for x in np.argpartition(fitnesses, -5)[-5:]]
             fittest = population[fitnesses.argmax()]
             avg_fitness = fitnesses.sum() / len(fitnesses)
             min_fitness = fitnesses.min()
-            population = select(population, fitnesses - min_fitness + 5)
+            population = select(population, np.clip(fitnesses, 1, None))
             random.shuffle(population)
-            population.pop()
-            population.append(fittest)
+            population = population[:-5]
+            population.extend(n_fittest)
             pop2 = list(population)
-            for j in range(len(population)):
+            for j in range(len(population) - 1):
                 child = crossover(population[j], pop2)
                 child = mutate(child)
                 population[j] = child
-            print(f"Generation {i}. avg: {avg_fitness}, fittest: {fitnesses.max()}")
+            print(f"Generation {i}. avg: {avg_fitness:6.2f}, fittest: {fitnesses.max():6.2f}")

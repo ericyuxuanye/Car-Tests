@@ -1,6 +1,7 @@
 import pygame
 from math import sqrt
 import numpy as np
+from numba import njit
 
 from typing import List, Tuple
 
@@ -23,6 +24,7 @@ should_fill = np.zeros((1024, 768), dtype=bool)
 fill_surf.fill("white")
 
 
+@njit
 def line_intersect(line1, line2):
     a, c, b, d = line1
     f, h, g, j = line2
@@ -30,6 +32,7 @@ def line_intersect(line1, line2):
     return a * t + b, c * t + d
 
 
+@njit
 def line_dist_sq(point, line):
     vec_const = (line[2] - point[0], line[3] - point[1])
     t_comp = line[0] * line[0] + line[1] * line[1]
@@ -44,6 +47,7 @@ def line_dist_sq(point, line):
     return (point[0] - x) ** 2 + (point[1] - y) ** 2
 
 
+@njit
 def line_dist_sq_np(x, y, line):
     vec_const = (line[2] - x, line[3] - y)
     t_comp = line[0] ** 2 + line[1] ** 2

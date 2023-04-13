@@ -5,7 +5,9 @@ import torch
 from torch import nn
 from torch.nn.parameter import Parameter
 
-device = "cpu"  # change to "cuda" for nvidia, "cpu" for cpu
+# change to "cuda" for nvidia, "cpu" for cpu
+# cpu probably works best since model is small
+device = "cpu"
 # because we do not need gradients for GA
 torch.set_grad_enabled(False)
 
@@ -16,8 +18,9 @@ ACTIONS = 9
 POP_SIZE = 150
 
 MUTATION_FACTOR = 0.003
-MUTATION_RATE = 0.15
-CROSS_RATE = 0.15
+MUTATION_RATE = 0.55
+CROSS_RATE = 0.55
+CROSS_CHANCE = 0.2
 
 
 def create_net():
@@ -95,14 +98,19 @@ def crossover(parent1: Parameters, pop: list[Parameters]) -> Parameters:
         i = np.random.randint(0, len(pop), size=1)[0]
         parent2 = pop[i]
         child = []
-        split = np.random.rand()
+        # split = np.random.rand()
 
         for p1l, p2l in zip(parent1, parent2):
-            splitpoint = int(len(p1l) * split)
-            new_param = nn.parameter.Parameter(
-                torch.cat([p1l[:splitpoint], p2l[splitpoint:]])
-            )
+            # splitpoint = int(len(p1l) * split)
+            # new_param = nn.parameter.Parameter(
+            #     torch.cat([p1l[:splitpoint], p2l[splitpoint:]])
+            # )
+            # child.append(new_param)
+            mask = torch.bernoulli(torch.full(p1l.shape, CROSS_CHANCE)).int()
+            reverse_mask = torch.ones(p1l.shape).int() - mask
+            new_param = nn.parameter.Parameter(p1l * reverse_mask + p2l * mask)
             child.append(new_param)
+
 
         return child
     else:
@@ -120,8 +128,8 @@ def gen_mutate(shape: torch.Size) -> torch.Tensor:
     """
     return (
         nn.Dropout(MUTATION_RATE)(torch.ones(shape) - 0.5)
-        * torch.randn(shape).to(device)
-        * MUTATION_FACTOR
+        * torch.randn(shape)
+        * (MUTATION_FACTOR*2 - MUTATION_FACTOR)
     )
 
 
@@ -149,7 +157,7 @@ def save_model(model: torch.nn.Module, population: list[Parameters]):
 def load_model():
     net = create_net()
     net.load_state_dict(torch.load("best.pt"))
-    return net
+    return net.to(device)
 
 def get_population():
     if os.path.isfile("./population.pt"):
