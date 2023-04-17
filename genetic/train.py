@@ -26,18 +26,6 @@ from model import (
     save_model,
 )
 
-action_to_keys = (
-    (0, 0, 0, 0),
-    (1, 0, 0, 0),
-    (0, 1, 0, 0),
-    (0, 0, 1, 0),
-    (0, 0, 0, 1),
-    (1, 0, 0, 1),
-    (1, 0, 1, 0),
-    (0, 1, 1, 0),
-    (0, 1, 0, 1),
-)
-
 try:
     set_start_method("spawn")
 except RuntimeError:
@@ -45,12 +33,10 @@ except RuntimeError:
 
 
 class Car:
-    def __init__(self, acceleration, friction, rot_speed, starting_index):
+    def __init__(self, friction, starting_index):
         super().__init__()
         self.width = 24
         self.height = 47
-        self.rot_speed = rot_speed
-        self.accel = acceleration
         self.friction = friction
         self.just_hit = False
         # idx = random.randint(0, len(lines)-1)
@@ -62,20 +48,15 @@ class Car:
         self.rotation = line_angle(line)
 
     def step(self, action):
-        left, right, forward, backward = action_to_keys[action]
-        if left:
-            self.rotation += self.rot_speed
-        if right:
-            self.rotation -= self.rot_speed
+        accel, steer = action[0], action[1]
+        accel *= 2
+        steer *= 10
+        self.rotation += steer
 
         radians = self.rotation / 180 * pi + pi / 2
-        if forward:
-            self.velocity[0] += self.accel * cos(radians)
-            # subtract because y is flipped
-            self.velocity[1] -= self.accel * sin(radians)
-        if backward:
-            self.velocity[0] -= self.accel * cos(radians)
-            self.velocity[1] += self.accel * sin(radians)
+        self.velocity[0] += accel * cos(radians)
+        # subtract because y is flipped
+        self.velocity[1] -= accel * sin(radians)
         # friction calculation
         r = sqrt(self.velocity[0] ** 2 + self.velocity[1] ** 2)
         theta = atan2(self.velocity[1], self.velocity[0])
@@ -118,23 +99,55 @@ class Car:
         return reward
 
 
-def select(pop: list[Parameters], fitnesses: np.ndarray) -> list[Parameters]:
-    """
-    Select a new population
+# def select(pop: list[Parameters], fitnesses: np.ndarray) -> list[Parameters]:
+#     """
+#     Select a new population
+# 
+#     @params
+#         pop (List[Parameters]): The entire population of parameters
+#         fitnesses (np.ndarray): the fitnesses for each entity in the population
+#     @returns
+#         List[Parameters]: A new population made of fitter individuals
+#     """
+#     idx = np.random.choice(
+#         np.arange(len(pop)),
+#         size=len(pop),
+#         replace=True,
+#         p=fitnesses / (fitnesses.sum()),
+#     )
+#     return [pop[i] for i in idx]
 
-    @params
-        pop (List[Parameters]): The entire population of parameters
-        fitnesses (np.ndarray): the fitnesses for each entity in the population
-    @returns
-        List[Parameters]: A new population made of fitter individuals
-    """
-    idx = np.random.choice(
-        np.arange(len(pop)),
-        size=len(pop),
-        replace=True,
-        p=fitnesses / (fitnesses.sum()),
-    )
-    return [pop[i] for i in idx]
+def makeWheel(population, fitness: np.ndarray):
+    wheel = []
+    total = fitness.sum()
+    top = 0
+    for p, f in zip(population, fitness):
+        f = f/total
+        wheel.append((top, top+f, p))
+        top += f
+    return wheel
+
+def binSearch(wheel, num):
+    mid = len(wheel)//2
+    low, high, answer = wheel[mid]
+    if low<=num<=high:
+        return answer
+    elif high < num:
+        return binSearch(wheel[mid+1:], num)
+    else:
+        return binSearch(wheel[:mid], num)
+
+def select(wheel, N):
+    stepSize = 1.0/N
+    answer = []
+    r = random.random()
+    answer.append(binSearch(wheel, r))
+    while len(answer) < N:
+        r += stepSize
+        if r>1:
+            r %= 1
+        answer.append(binSearch(wheel, r))
+    return answer
 
 def init_worker():
     global model
@@ -142,17 +155,16 @@ def init_worker():
 
 def fitness(params, starting_index):
     set_params(model, params)
-    car = Car(1.5, 1, 7, starting_index)
+    car = Car(1, starting_index)
     observation = car.get_state()
     total_reward = 0
-    for _ in range(600):
+    for _ in range(1200):
         action = tensor_to_action(model(convert_to_tensor(observation)))
         observation, reward, crashed = car.step(action)
         total_reward += reward
         if crashed:
             break
     return total_reward
-
 
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
@@ -170,19 +182,21 @@ if __name__ == "__main__":
         for i in count():
             # we start at a different location each generation
             starting_location = random.randint(0, num_lines - 1)
-            # starting_location = 13
+            # starting_location = 0
             fitness_eval = partial(fitness, starting_index=starting_location)
             fitnesses = np.array(pool.map(fitness_eval, population))
-            n_fittest = [population[x] for x in np.argpartition(fitnesses, -5)[-5:]]
             fittest = population[fitnesses.argmax()]
             avg_fitness = fitnesses.sum() / len(fitnesses)
-            min_fitness = fitnesses.min()
-            population = select(population, np.clip(fitnesses, 1, None))
-            random.shuffle(population)
-            population = population[:-5]
+            n_fittest = [population[x] for x in np.argpartition(fitnesses, -10)[-10:]]
+            wheel = makeWheel(population, np.clip(fitnesses, 1, None))
+            population = select(wheel, len(population) - 10)
+            # min_fitness = fitnesses.min()
+            # population = select(population, np.clip(fitnesses, 1, None))
+            # random.shuffle(population)
+            # population = population[:-10]
             population.extend(n_fittest)
             pop2 = list(population)
-            for j in range(len(population) - 1):
+            for j in range(len(population) - 10):
                 child = crossover(population[j], pop2)
                 child = mutate(child)
                 population[j] = child

@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-device = "mps"
+device = "cpu"
 
 Transition = namedtuple("Transition", ("state", "action", "next_state", "reward"))
 
@@ -32,9 +32,9 @@ class ReplayMemory:
 class DQN(nn.Module):
     def __init__(self, n_observations, n_actions):
         super(DQN, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 64)
-        self.layer2 = nn.Linear(64, 64)
-        self.layer3 = nn.Linear(64, n_actions)
+        self.layer1 = nn.Linear(n_observations, 32)
+        self.layer2 = nn.Linear(32, 32)
+        self.layer3 = nn.Linear(32, n_actions)
 
     def forward(self, x):
         x = F.leaky_relu(self.layer1(x))
@@ -42,7 +42,7 @@ class DQN(nn.Module):
         return self.layer3(x)
 
 
-BATCH_SIZE = 128
+BATCH_SIZE = 256
 GAMMA = 0.99
 EPS_START = 0.9
 EPS_END = 0.05
@@ -61,7 +61,7 @@ target_net.load_state_dict(policy_net.state_dict())
 
 optimizer = optim.Adam(policy_net.parameters(), lr=LR, amsgrad=True)
 
-memory = ReplayMemory(10000)
+memory = ReplayMemory(100000)
 
 steps_done = 0
 if os.path.exists("steps.txt"):
@@ -105,7 +105,8 @@ def optimize_model():
 
     # Compute V(s_{t+1})
     # with default punishment
-    next_state_values = torch.full((BATCH_SIZE,), -10, device=device, dtype=torch.float)
+    # next_state_values = torch.full((BATCH_SIZE,), -10, device=device, dtype=torch.float)
+    next_state_values = torch.zeros((BATCH_SIZE,), device=device, dtype=torch.float)
     with torch.no_grad():
         next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0]
 

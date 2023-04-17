@@ -13,13 +13,11 @@ from data import num_lines, lines, border_lines
 
 
 class Car(pygame.sprite.Sprite):
-    def __init__(self, acceleration, friction, rot_speed):
+    def __init__(self, friction):
         super(Car, self).__init__()
         self.normal = pygame.image.load("car.png").convert_alpha()
         self.width = 24
         self.height = 47
-        self.rot_speed = rot_speed
-        self.accel = acceleration
         self.friction = friction
         self.just_hit = False
         self.velocity = np.empty(2)
@@ -27,7 +25,7 @@ class Car(pygame.sprite.Sprite):
 
     def reset(self):
         idx = random.randint(0, len(lines)-1)
-        # idx = 13
+        # idx = 0
         line = lines[idx]
         self.x = line[2]
         self.y = line[3]
@@ -37,20 +35,15 @@ class Car(pygame.sprite.Sprite):
         self.surf = pygame.transform.rotate(self.normal, self.rotation)
         self.rect = self.surf.get_rect(center=(self.x, self.y))
 
-    def update(self, left, right, forward, backward):
-        if left:
-            self.rotation += self.rot_speed
-        if right:
-            self.rotation -= self.rot_speed
+    def update(self, accel, steer):
+        accel *= 2
+        steer *= 10
+        self.rotation += steer
 
         radians = self.rotation / 180 * pi + pi / 2
-        if forward:
-            self.velocity[0] += self.accel * cos(radians)
-            # subtract because y is flipped
-            self.velocity[1] -= self.accel * sin(radians)
-        if backward:
-            self.velocity[0] -= self.accel * cos(radians)
-            self.velocity[1] += self.accel * sin(radians)
+        self.velocity[0] += accel * cos(radians)
+        # subtract because y is flipped
+        self.velocity[1] -= accel * sin(radians)
         # friction calculation
         r = sqrt(self.velocity[0] ** 2 + self.velocity[1] ** 2)
         theta = atan2(self.velocity[1], self.velocity[0])
