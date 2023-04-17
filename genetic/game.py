@@ -14,19 +14,6 @@ from pygame.locals import (
 
 from sprites import Car
 
-action_to_keys = (
-    (0, 0, 0, 0),
-    (1, 0, 0, 0),
-    (0, 1, 0, 0),
-    (0, 0, 1, 0),
-    (0, 0, 0, 1),
-    (1, 0, 0, 1),
-    (1, 0, 1, 0),
-    (0, 1, 1, 0),
-    (0, 1, 0, 1),
-)
-
-
 def make_surface_rgba(array):
     """Returns a surface made from a [w, h, 4] numpy array with per-pixel alpha"""
     shape = array.shape
@@ -59,7 +46,7 @@ background.blit(track, (0, 0))
 
 initial_point_x = lines[0][2]
 initial_point_y = lines[0][3]
-car = Car(1.5, 1, 7)
+car = Car(1)
 
 done = False
 clock = pygame.time.Clock()
@@ -75,8 +62,8 @@ while not done:
 
     # pressed = pygame.key.get_pressed()
     # car.update(pressed[K_LEFT], pressed[K_RIGHT], pressed[K_UP], pressed[K_DOWN])
-    action = action_to_keys[int(tensor_to_action(model(convert_to_tensor(car.get_state()))))]
-    car.update(*action)
+    action = tensor_to_action(model(convert_to_tensor(car.get_state())))
+    car.update(action[0], action[1])
     screen.blit(background, (0, 0))
     screen.blit(car.surf, car.rect)
     pygame.display.flip()

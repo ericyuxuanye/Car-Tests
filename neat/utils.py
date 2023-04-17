@@ -103,8 +103,8 @@ def line_intersect(line1, line2):
     a, c, b, d = line1
     f, h, g, j = line2
     denom = c*f-a*h
-    # if denom == 0 or h == 0:
-    #     return float('nan'), float('nan')
+    if denom == 0 or h == 0:
+        return np.nan, np.nan
     t = -(d * f - b * h + g * h - f * j) / denom
     s = (c * t + d - j) / h
     return t, s

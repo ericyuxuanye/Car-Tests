@@ -12,52 +12,33 @@ from utils import (
 from data import num_lines, border_lines, lines
 import neat
 import os
-action_to_keys = [
-    (0, 0, 0, 0),
-    (1, 0, 0, 0),
-    (0, 1, 0, 0),
-    (0, 0, 1, 0),
-    (0, 0, 0, 1),
-    (1, 0, 0, 1),
-    (1, 0, 1, 0),
-    (0, 1, 1, 0),
-    (0, 1, 0, 1),
-]
-
 
 class Car():
-    def __init__(self, acceleration, friction, rot_speed):
+    def __init__(self, friction):
         super().__init__()
         self.width = 24
         self.height = 47
-        self.rot_speed = rot_speed
-        self.accel = acceleration
         self.friction = friction
         self.just_hit = False
         # idx = random.randint(0, len(lines)-1)
-        line = lines[0]
+        idx = 13
+        line = lines[idx]
         self.x = line[2]
         self.y = line[3]
         self.velocity = np.array([0.0, 0.0])
-        self.prev_distance = 0
+        self.prev_distance = idx
         self.rotation = line_angle(line)
 
     def step(self, action):
-        probs = softmax(action)
-        left, right, forward, backward = action_to_keys[np.random.choice(np.arange(9), p=probs)]
-        if left:
-            self.rotation += self.rot_speed
-        if right:
-            self.rotation -= self.rot_speed
+        accel, steer = action
+        accel = np.tanh(accel) * 5
+        steer = np.tanh(steer) * 10
+        self.rotation += steer
 
         radians = self.rotation / 180 * pi + pi / 2
-        if forward:
-            self.velocity[0] += self.accel * cos(radians)
-            # subtract because y is flipped
-            self.velocity[1] -= self.accel * sin(radians)
-        if backward:
-            self.velocity[0] -= self.accel * cos(radians)
-            self.velocity[1] += self.accel * sin(radians)
+        self.velocity[0] += accel * cos(radians)
+        # subtract because y is flipped
+        self.velocity[1] -= accel * sin(radians)
         # friction calculation
         r = sqrt(self.velocity[0] ** 2 + self.velocity[1] ** 2)
         theta = atan2(self.velocity[1], self.velocity[0])
@@ -103,10 +84,10 @@ class Car():
 
 def eval_genome(genome, config):
     net = neat.nn.FeedForwardNetwork.create(genome, config)
-    car = Car(1.5, 1, 7)
+    car = Car(1)
     observation = car.get_state()
     total_reward = 0
-    while True:
+    for _ in range(1200):
         action = net.activate(observation)
         observation, reward, crashed = car.step(action)
         total_reward += reward
@@ -132,7 +113,7 @@ def run(config_file):
     p.add_reporter(neat.Checkpointer(5))
 
     # Run for up to 300 generations.
-    winner = p.run(evaluator.evaluate, 100)
+    winner = p.run(evaluator.evaluate, 300)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))

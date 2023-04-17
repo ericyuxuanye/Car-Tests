@@ -14,22 +14,23 @@ torch.set_grad_enabled(False)
 Parameters = list[Parameter]
 
 OBSERVATIONS = 10
-ACTIONS = 9
-POP_SIZE = 150
+ACTIONS = 2
+POP_SIZE = 200
 
 MUTATION_FACTOR = 0.003
-MUTATION_RATE = 0.55
-CROSS_RATE = 0.55
-CROSS_CHANCE = 0.2
+MUTATION_RATE = 0.25
+CROSS_RATE = 0.45
+CROSS_CHANCE = 0.6
 
 
 def create_net():
     return nn.Sequential(
         nn.Linear(OBSERVATIONS, 32, bias=True),
-        nn.ReLU(),
+        nn.Sigmoid(),
         nn.Linear(32, 16, bias=True),
-        nn.ReLU(),
+        nn.Sigmoid(),
         nn.Linear(16, ACTIONS, bias=True),
+        nn.Tanh()
     ).to(device)
 
 
@@ -39,7 +40,8 @@ def convert_to_tensor(observation):
 
 def tensor_to_action(tensor: torch.Tensor):
     # return torch.multinomial(tensor, 1, True).item()
-    return torch.argmax(tensor.cpu()).item()
+    # return torch.argmax(tensor.cpu()).item()
+    return torch.flatten(tensor).cpu().detach().numpy()
 
 
 def get_params(net: torch.nn.Sequential) -> Parameters:
