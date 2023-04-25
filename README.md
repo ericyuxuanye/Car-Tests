@@ -1,6 +1,10 @@
 # Car-Tests
 Testing the performance of AI on a racetrack environment, using various different techniques including reinforcement learning and genetic algorithms.
 
+## Prerequisites:
+Install Python: https://www.python.org/downloads/
+Install Anaconda: https://www.anaconda.com/download/
+
 ## Setup
 
 It's recommended you use a Python venv for this project. Run the following commands (assuming Anaconda):
