@@ -112,7 +112,7 @@ class Car(Env):
 env = Car(1.5, 1, 7)
 # check_env(env)
 
-# model = PPO("MlpPolicy", env, verbose=2)
-model = PPO.load("ppo_racer", env=env)
+model = PPO("MlpPolicy", env, verbose=2)
+# model = PPO.load("ppo_racer", env=env)
 model.learn(total_timesteps=100_000)
 model.save("ppo_racer")
