@@ -2,6 +2,8 @@
 
 This is an implementation of neuroevolution that only
 modifies the parameters (not the topology, which NEAT implements).
+The action space for the environment in this case is continuous because
+this allows for simpler neural networks.
 
 ## Training
 
