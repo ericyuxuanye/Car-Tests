@@ -207,8 +207,8 @@ while not done:
                     outer_points[i][1],
                 )
                 inner_line = (
-                    inner_points[i + 1][0] - inner_points[i][0],
-                    inner_points[i + 1][1] - inner_points[i][1],
+                    inner_points[i+1][0] - inner_points[i][0],
+                    inner_points[i+1][1] - inner_points[i][1],
                     inner_points[i][0],
                     inner_points[i][1],
                 )
