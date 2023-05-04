@@ -18,7 +18,7 @@ ACTIONS = 2
 POP_SIZE = 200
 
 MUTATION_FACTOR = 0.003
-MUTATION_RATE = 0.25
+MUTATION_RATE = 0.35
 CROSS_RATE = 0.45
 CROSS_CHANCE = 0.6
 
@@ -100,6 +100,7 @@ def crossover(parent1: Parameters, pop: list[Parameters]) -> Parameters:
         i = np.random.randint(0, len(pop), size=1)[0]
         parent2 = pop[i]
         child = []
+        mask = None
         # split = np.random.rand()
 
         for p1l, p2l in zip(parent1, parent2):
@@ -108,10 +109,15 @@ def crossover(parent1: Parameters, pop: list[Parameters]) -> Parameters:
             #     torch.cat([p1l[:splitpoint], p2l[splitpoint:]])
             # )
             # child.append(new_param)
-            mask = torch.bernoulli(torch.full(p1l.shape, CROSS_CHANCE)).int()
-            reverse_mask = torch.ones(p1l.shape).int() - mask
-            new_param = nn.parameter.Parameter(p1l * reverse_mask + p2l * mask)
+            if len(p1l.shape) == 2:
+                mask = torch.bernoulli(torch.full((p1l.shape[0],), CROSS_CHANCE)).int()
+                tmp = mask.broadcast_to((p1l.shape[1], p1l.shape[0])).transpose(0, 1)
+            else:
+                tmp = mask
+            reverse_mask = torch.ones(p1l.shape).int() - tmp
+            new_param = nn.parameter.Parameter(p1l * reverse_mask + p2l * tmp)
             child.append(new_param)
+
 
 
         return child
